@@ -15,9 +15,11 @@ void main() {
   List<List<String>> computerGrid = List.generate(gridSize, (_) => List.filled(gridSize, '🔳')); 
   List<List<String>> computerShips = List.generate(gridSize, (_) => List.filled(gridSize, '🔳'));
 
-  // Счётчики попаданий
-  int playerScore = 0;
-  int computerScore = 0;
+  // Счётчики попаданий, промахов и оставшихся кораблей
+  int playerHits = 0;
+  int playerMisses = 0;
+  int computerHits = 0;
+  int computerMisses = 0;
 
   placeShipsAutomatically(computerShips);
 
@@ -38,33 +40,70 @@ void main() {
     List<int> coordinates = getCoordinates();
 
     if (shoot(computerShips, computerGrid, coordinates)) {
-      playerScore++;
+      playerHits++;
       print("Попадание!");
     } else {
+      playerMisses++;
       print("Мимо!");
     }
 
     if (checkWin(computerShips)) {
       print("Поздравляем, вы победили!");
-      print("Ваш счёт: $playerScore | Счёт компьютера: $computerScore");
+      saveStatistics("Игрок", playerGrid, playerHits, playerMisses, computerHits, computerMisses);
       break;
     }
 
     print("Ход компьютера...");
     List<int> computerShot = generateRandomCoordinates();
     if (shoot(playerGrid, playerGrid, computerShot)) {
-      computerScore++;
+      computerHits++;
       print("Компьютер попал в вашу цель!");
     } else {
+      computerMisses++;
       print("Компьютер промахнулся!");
     }
 
     if (checkWin(playerGrid)) {
       print("Вы проиграли. Компьютер победил.");
-      print("Ваш счёт: $playerScore | Счёт компьютера: $computerScore");
+      saveStatistics("Компьютер", computerGrid, computerHits, computerMisses, playerHits, playerMisses);
       break;
     }
   }
+}
+
+void saveStatistics(String winner, List<List<String>> grid, int hits, int misses, int opponentHits, int opponentMisses) {
+  int remainingShips = countRemainingShips(grid);
+
+  // Создаём каталог для сохранения статистики
+  Directory('statistics').createSync();
+  File file = File('statistics/game_statistics.txt');
+
+  // Формируем текст статистики
+  String stats = '''
+  Победитель: $winner
+  Количество попаданий: $hits
+  Количество промахов: $misses
+  Количество кораблей, оставшихся на поле: $remainingShips
+  Попадания противника: $opponentHits
+  Промахи противника: $opponentMisses
+  ''';
+
+  // Сохраняем статистику в файл
+  file.writeAsStringSync(stats);
+
+  print("Статистика игры сохранена в файл 'statistics/game_statistics.txt'.");
+}
+
+int countRemainingShips(List<List<String>> grid) {
+  int count = 0;
+  for (int i = 0; i < gridSize; i++) {
+    for (int j = 0; j < gridSize; j++) {
+      if (grid[i][j] == '🚢') {
+        count++;
+      }
+    }
+  }
+  return count;
 }
 
 void placeShipsAutomatically(List<List<String>> grid) {
